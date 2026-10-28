@@ -3,7 +3,7 @@ display_name: 斗地主
 desc: 在群里和群友开一局斗地主：创建游戏、上桌、抢地主、出牌、结算积分，支持每日低保与胜率统计。
 short_desc: 让群友在群里一起斗地主。
 author: 天影大侠
-version: 1.0.0
+version: 1.0.1
 astrbot_version: ">=4.9.2"
 support_platforms:
   - aiocqhttp
