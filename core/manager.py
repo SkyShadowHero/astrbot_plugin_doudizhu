@@ -234,7 +234,7 @@ class GameManager:
             if game is None:
                 await sender.private(uid, "你当前没有进行中的对局")
             else:
-                await game.show_hand(uid)
+                await game.show_hand(uid, reply=sender)
             return True
 
         if text in GROUP_ONLY_WORDS:
@@ -246,8 +246,8 @@ class GameManager:
         if game.phase is not Phase.PLAYING:
             return False
         if text in PASS_WORDS:
-            return await game.do_pass(uid)
-        return await game.play(uid, text)
+            return await game.do_pass(uid, reply=sender)
+        return await game.play(uid, text, reply=sender)
 
     # ------------------------------------------------------------------ 内部
     async def _create(self, platform_id: str, group_id: str, sender: Sender) -> None:

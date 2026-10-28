@@ -116,10 +116,13 @@ class AstrBotSender:
         plugin: Star,
         platform_id: str,
         group_umo: str | None = None,
+        dm_event: AstrMessageEvent | None = None,
     ) -> None:
         self.plugin = plugin
         self.platform_id = platform_id
         self.group_umo = group_umo
+        #: 当前消息本身来自私聊时带上事件，回复直接走这个会话（跨平台最稳）
+        self.dm_event = dm_event
 
     async def group(self, text: str, at: str | None = None) -> None:
         if not self.group_umo:
@@ -145,6 +148,17 @@ class AstrBotSender:
                     logger.error("斗地主：群消息（纯文本）发送失败: %s", exc2)
 
     async def private(self, uid: str, text: str) -> bool:
+        # 这条消息就来自该玩家的私聊：直接回到当前会话。
+        # QQ/Telegram 可以靠 FriendMessage:{uid} 猜出会话，但 Discord 等平台的
+        # 私聊会话 id 不等于用户 id，猜出来的 umo 发不出去。
+        if self.dm_event is not None and str(uid) == str(self.dm_event.get_sender_id()):
+            try:
+                await self.dm_event.send(MessageChain().message(text))
+                return True
+            except Exception as exc:
+                logger.warning("斗地主：私聊 %s 发送失败: %s", uid, exc)
+                return False
+
         umo = f"{self.platform_id}:FriendMessage:{uid}"
         try:
             await self.plugin.context.send_message(umo, MessageChain().message(text))
@@ -222,16 +236,11 @@ class DoudizhuPlugin(Star):
         return name[:16]
 
     def _sender_for(self, event: AstrMessageEvent) -> Sender:
-        manager = get_manager()
-        group_id = event.get_group_id()
-        if group_id:
+        if event.get_group_id():
             return AstrBotSender(self, event.get_platform_id(), event.unified_msg_origin)
-        # 私聊：沿用该玩家所在牌局的群会话，方便把出牌结果播报到群里
-        if manager is not None:
-            game = manager.find_game_by_player(str(event.get_sender_id()))
-            if game is not None:
-                return game.sender
-        return AstrBotSender(self, event.get_platform_id(), None)
+        # 私聊：带上事件本身，回复直接回到当前私聊会话。
+        # 这样 Discord 这类"私聊会话 id ≠ 用户 id"的平台也能用「我的牌」/私聊出牌。
+        return AstrBotSender(self, event.get_platform_id(), None, dm_event=event)
 
     # ------------------------------------------------------------------ 游戏指令
     @filter.regex(WORD_PATTERN)

@@ -191,10 +191,15 @@ async def run() -> None:
     assert event.stopped, "出牌消息应该被消费"
     assert len(player.hand) == hand_size - 1, (hand_size, len(player.hand))
 
-    # 6. 私聊「我的牌」
+    # 6. 私聊「我的牌」：应该直接回到当前私聊会话（不依赖能猜出 FriendMessage umo）
+    sent_before = len(context.sent)
     event = FakeEvent("我的牌", uid="2", name="乙", private=True)
     await plugin.on_play_cards(event)
-    assert any(umo == "default:FriendMessage:2" for umo, _ in context.sent), context.sent[-3:]
+    dm_text = "\n".join(item.get_plain_text() for item in event.sent)
+    assert "你的手牌" in dm_text, event.sent
+    assert not any(
+        umo == "default:FriendMessage:2" for umo, _ in context.sent[sent_before:]
+    ), "私聊回复不应该再走构造的 FriendMessage umo"
 
     # 7. 斜杠指令 /d beg、/d me、/d help
     results = [item async for item in plugin.slash_command(FakeEvent("d beg", uid="1"), "beg")]

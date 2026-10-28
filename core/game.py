@@ -234,19 +234,37 @@ class Game:
         await self._prompt_bid()
         self._arm_timer()
 
-    async def _send_hand(self, player: Player, title: str) -> None:
-        ok = await self.sender.private(
+    async def _send_hand(
+        self,
+        player: Player,
+        title: str,
+        reply: Sender | None = None,
+    ) -> None:
+        """把手牌私聊发给玩家。
+
+        ``reply`` 是"当前这条消息来自哪个会话"的发送器：玩家在私聊里查牌时，
+        直接回到那个私聊会话（Discord 等平台的私聊会话 id 不等于用户 id，
+        构造出来的 umo 会发不出去）。
+        """
+        target = reply or self.sender
+        ok = await target.private(
             player.uid,
             f"{title}（{len(player.hand)} 张）：\n{format_cards(player.hand)}",
         )
         if not ok:
             await self.sender.group(
-                f"⚠️ 私聊 {player.display} 发送手牌失败，请先加 bot 好友后发送「我的牌」查看",
+                f"⚠️ 私聊 {player.display} 发送手牌失败，请先私聊 bot 发送「我的牌」查看",
             )
 
-    async def _inform(self, player: Player, text: str) -> None:
+    async def _inform(
+        self,
+        player: Player,
+        text: str,
+        reply: Sender | None = None,
+    ) -> None:
         """优先私聊告诉某个玩家；私聊失败就 @ 他发在群里。"""
-        if not await self.sender.private(player.uid, text):
+        target = reply or self.sender
+        if not await target.private(player.uid, text):
             await self.sender.group(text, at=player.uid)
 
     # ------------------------------------------------------------------ 抢地主
@@ -314,7 +332,12 @@ class Game:
             )
         await self.sender.group(f"轮到你出牌了：{hint}", at=player.uid)
 
-    async def play(self, uid: str, text: str) -> bool:
+    async def play(
+        self,
+        uid: str,
+        text: str,
+        reply: Sender | None = None,
+    ) -> bool:
         """处理一次出牌请求；返回是否"消费"了这条消息。"""
         if self.phase is not Phase.PLAYING:
             return False
@@ -322,21 +345,21 @@ class Game:
         if player is None or player.uid != uid:
             target = self.find(uid)
             if target is not None:
-                await self._inform(target, "还没轮到你出牌哦")
+                await self._inform(target, "还没轮到你出牌哦", reply)
                 return True
             return False
 
         cards = parse_cards(text)
         if not cards:
-            await self._inform(player, "没看懂你想要出什么牌啦")
+            await self._inform(player, "没看懂你想要出什么牌啦", reply)
             return True
 
         combo = detect(cards)
         if not combo.valid:
-            await self._inform(player, "没看懂你想要出什么牌啦")
+            await self._inform(player, "没看懂你想要出什么牌啦", reply)
             return True
         if not hand_has(player.hand, cards):
-            await self._inform(player, "没在你的牌中找到你想出的牌哦")
+            await self._inform(player, "没在你的牌中找到你想出的牌哦", reply)
             return True
 
         previous = self.last_play[1] if self.last_play else None
@@ -344,6 +367,7 @@ class Game:
             await self._inform(
                 player,
                 f"你出的牌貌似不符合规则哦：上家是{previous.text()}（{previous.name()}）",
+                reply,
             )
             return True
 
@@ -366,21 +390,21 @@ class Game:
             await self.sender.group(
                 f"⚠️ {player.display} 只剩 {len(player.hand)} 张牌了，感觉要赢了！",
             )
-        await self._send_hand(player, "你还剩")
+        await self._send_hand(player, "你还剩", reply)
 
         self._advance_turn()
         await self._prompt_play()
         self._arm_timer()
         return True
 
-    async def do_pass(self, uid: str) -> bool:
+    async def do_pass(self, uid: str, reply: Sender | None = None) -> bool:
         if self.phase is not Phase.PLAYING:
             return False
         player = self.current
         if player is None or player.uid != uid:
             target = self.find(uid)
             if target is not None:
-                await self._inform(target, "还没轮到你，先别急着过牌哦")
+                await self._inform(target, "还没轮到你，先别急着过牌哦", reply)
                 return True
             return False
         if self.last_play is None:
@@ -455,7 +479,7 @@ class Game:
         self.on_finish()
 
     # ------------------------------------------------------------------ 查询
-    async def show_hand(self, uid: str) -> None:
+    async def show_hand(self, uid: str, reply: Sender | None = None) -> None:
         player = self.find(uid)
         if player is None:
             await self.sender.group("你不在本局游戏中哦")
@@ -466,7 +490,7 @@ class Game:
         if not player.hand:
             await self.sender.group(f"{player.display} 你的牌已经出完啦")
             return
-        await self._send_hand(player, "你的手牌")
+        await self._send_hand(player, "你的手牌", reply)
 
     async def show_status(self) -> None:
         if not self.table:
