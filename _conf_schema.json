@@ -1,0 +1,48 @@
+{
+  "enable_slash_commands": {
+    "description": "启用斜杠指令（/d beg、/d me、/d help）",
+    "type": "bool",
+    "default": true,
+    "hint": "关闭后本插件不再提供任何以「/」开头的指令，也不会占用 AstrBot 的唤醒前缀；中文口令（乞讨、我的斗地主资金、斗地主帮助、出34567 等）不受影响。"
+  },
+  "basic_bet": {
+    "description": "底分",
+    "type": "int",
+    "default": 200,
+    "hint": "每个农民的输赢基数。地主赢则从每个农民手里赢走底分×倍率，输则各赔一份。",
+    "slider": { "min": 10, "max": 5000, "step": 10 }
+  },
+  "initial_coins": {
+    "description": "新玩家初始 point",
+    "type": "int",
+    "default": 500,
+    "hint": "第一次参与斗地主时发放的 point，至少要够付一次底分。",
+    "slider": { "min": 0, "max": 100000, "step": 100 }
+  },
+  "daily_allowance": {
+    "description": "每日低保 point",
+    "type": "int",
+    "default": 500,
+    "hint": "发送「乞讨」（或 /d beg）领取，每天只能领一次。",
+    "slider": { "min": 0, "max": 100000, "step": 100 }
+  },
+  "turn_timeout": {
+    "description": "回合超时（秒）",
+    "type": "int",
+    "default": 120,
+    "hint": "超时后自动替玩家「不抢」或「不出」（自由出牌时自动出最小的一张）。填 0 表示不限时。",
+    "slider": { "min": 0, "max": 600, "step": 10 }
+  },
+  "allowed_groups": {
+    "description": "允许开局的群号",
+    "type": "list",
+    "default": [],
+    "hint": "留空表示所有群都可以玩；填写后只有列表里的群能发「创建游戏」。"
+  },
+  "admin_ids": {
+    "description": "额外管理员 QQ",
+    "type": "list",
+    "default": [],
+    "hint": "除 AstrBot 全局管理员外，这些 QQ 也能发送「结束游戏」强制结束牌局，以及「送钱@某人」给玩家加 point。"
+  }
+}
