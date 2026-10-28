@@ -4,7 +4,7 @@
 [kono-dada/doudizhu](https://github.com/kono-dada/doudizhu)（v1.1，Kotlin 版），
 逻辑（牌型、倍率、抢地主、结算、每日低保）保持一致，交互方式改成 AstrBot 的消息驱动。
 
-- 由天影大侠和Deepseek共同移植到astrbot并添加新功能。
+- 由Deepseek移植到astrbot并添加新功能。
 
 所有指令都是**中文、不带 `/` 前缀**，不占用 AstrBot 的唤醒前缀，避免和其他机器人、
 QQ 官方指令抢指令。
