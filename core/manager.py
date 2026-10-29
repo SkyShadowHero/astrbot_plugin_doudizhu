@@ -8,12 +8,20 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from typing import Protocol
 
-from .game import Game, GameConfig, Phase, PlayerData, Sender, today_index
+try:  # pragma: no cover - 正常运行一定走这里（AstrBot 环境）
+    from astrbot.api import logger
+except ImportError:  # pragma: no cover - 只有脱离 AstrBot 跑单元测试时才走到
+    class _NullLogger:
+        """没有 AstrBot 环境时的空日志器，保证 core 可以独立测试。"""
 
-logger = logging.getLogger(__name__)
+        def __getattr__(self, _name):
+            return lambda *args, **kwargs: None
+
+    logger = _NullLogger()
+
+from .game import Game, GameConfig, Phase, PlayerData, Sender, today_index
 
 #: 群聊里可以直接说的游戏指令（不需要 "/" 前缀，移植自原插件的写法）
 GAME_WORDS: tuple[str, ...] = (
